@@ -6,6 +6,7 @@ import api from '@/services/api';
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Pencil } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -75,17 +76,8 @@ export default function Home({ children }) {
       let passwordsData = [];
       
       if (response.data && typeof response.data === 'object') {
-        // Se a resposta contém um campo "passwords"
-        if (response.data.passwords && Array.isArray(response.data.passwords)) {
-          passwordsData = response.data.passwords;
-        } 
-        // Se a resposta já é um array
-        else if (Array.isArray(response.data)) {
-          passwordsData = response.data;
-        }
+        passwordsData = response.data.passwords;
       }
-      
-      console.log('Senhas processadas:', passwordsData);
       setPasswords(passwordsData);
       setFilteredPasswords(passwordsData);
       
@@ -174,14 +166,8 @@ export default function Home({ children }) {
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
-                    <span>Senhas Salvas</span>
-                    <Button variant="outline" size="sm" onClick={fetchPasswords}>
-                      Atualizar
-                    </Button>
-                  </CardTitle>
-                  <CardDescription>
-                    Lista de todas as suas senhas salvas
-                  </CardDescription>
+                    <span>Senhas Salvas</span>                   
+                  </CardTitle>                 
                 </CardHeader>
                 <CardContent>
                   {loading ? (
@@ -196,10 +182,7 @@ export default function Home({ children }) {
                       </div>
                       <p className="text-sm text-muted-foreground mb-4">
                         {error}
-                      </p>
-                      <Button onClick={fetchPasswords}>
-                        Tentar Novamente
-                      </Button>
+                      </p>                     
                     </div>
                   ) : passwords.length > 0 ? (
                     <>
@@ -210,26 +193,11 @@ export default function Home({ children }) {
                           value={searchQuery}
                           onChange={handleSearchChange}
                           className="pl-8"
-                        />
-                        {searchQuery && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-                            onClick={() => setSearchQuery("")}
-                          >
-                            ×
-                          </Button>
-                        )}
+                        />                       
                       </div>
                       
                       {filteredPasswords.length > 0 ? (
-                        <Table>
-                          <TableCaption>
-                            {searchQuery 
-                              ? `Exibindo ${filteredPasswords.length} de ${passwords.length} senhas.` 
-                              : 'Lista de senhas salvas.'}
-                          </TableCaption>
+                        <Table>                         
                           <TableHeader>
                             <TableRow>
                               <TableHead>Cliente</TableHead>
@@ -249,26 +217,28 @@ export default function Home({ children }) {
                                     <span className="font-mono">
                                       {visiblePasswords[password.id] ? password.password : '••••••••'}
                                     </span>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
+                                    <Button                                      
                                       onClick={() => copyToClipboard(password.password)}
                                       className="h-6 w-6"
                                       title="Copiar senha"
                                     >
                                       <Copy className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
+                                    <Button
                                       onClick={() => togglePasswordVisibility(password.id)}
                                       className="h-6 w-6"
                                       title={visiblePasswords[password.id] ? "Ocultar senha" : "Mostrar senha"}
                                     >
                                       {visiblePasswords[password.id] ? 
                                         <EyeOff className="h-4 w-4" /> : 
-                                        <Eye className="h-4 w-4" />
-                                      }
+                                        <Eye className="h-4 w-4" />}
+                                    </Button>
+                                    <Button
+                                      onClick={() => navigate(`/pass/edit/${password.id}`)}
+                                      className="h-6 w-6"
+                                      title="Editar senha"
+                                    >
+                                      <Pencil className="h-4 w-4" />
                                     </Button>
                                   </span>
                                 </TableCell>                            

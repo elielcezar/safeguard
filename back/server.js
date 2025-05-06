@@ -1,8 +1,11 @@
 import express from "express";
+import dotenv from 'dotenv';
 import publicRoutes from "./routes/public.js";  
 import privateRoutes from "./routes/private.js";
 import auth from './middlewares/auth.js';
 import cors from 'cors';
+
+dotenv.config();
 
 const app = express();
 
