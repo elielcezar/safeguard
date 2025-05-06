@@ -8,34 +8,42 @@ const encryptedFields = {
 // Middleware para encriptar campos antes de salvar no banco
 export function encryptionMiddleware(prisma) {  
   
+  
   // Intercepta operações de criação (create, createMany)
   prisma.$use(async (params, next) => {
     const { model, action, args } = params;
     
     // Verificar se o modelo possui campos para encriptar
-    if (encryptedFields[model] && ['create', 'createMany', 'update', 'updateMany', 'upsert'].includes(action)) {      
+    if (encryptedFields[model] && ['create', 'createMany', 'update', 'updateMany', 'upsert'].includes(action)) {            
       
       // Para operações de criação individual
       if (action === 'create' || action === 'update' || action === 'upsert') {
         const data = args.data;        
-       
+               
         // Encripta os campos definidos no mapeamento
         encryptedFields[model].forEach(field => {
           if (data[field] !== undefined && data[field] !== null) {            
-            data[field] = encrypt(data[field]);
+            try {
+              data[field] = encrypt(data[field]);
+            } catch (error) {              
+              throw error;
+            }
           }
-        });       
-       
+        });   
       }
       
       // Para criação em massa (createMany)
       if (action === 'createMany' || action === 'updateMany') {
         const dataArray = args.data;
-        if (Array.isArray(dataArray)) {
-          dataArray.forEach(data => {
+        if (Array.isArray(dataArray)) {          
+          dataArray.forEach((data, index) => {
             encryptedFields[model].forEach(field => {
               if (data[field] !== undefined && data[field] !== null) {
-                data[field] = encrypt(data[field]);
+                try {
+                  data[field] = encrypt(data[field]);
+                } catch (error) {                  
+                  throw error;
+                }
               }
             });
           });
@@ -54,32 +62,30 @@ export function encryptionMiddleware(prisma) {
     const result = await next(params);
     
     // Verifica se o modelo possui campos para decriptar
-    if (encryptedFields[model] && result && ['findUnique', 'findMany', 'findFirst'].includes(action)) {      
-      
+    if (encryptedFields[model] && result && ['findUnique', 'findMany', 'findFirst'].includes(action)) {                  
       // Para resultados únicos
       if (!Array.isArray(result)) {
-        if (result) {
+        if (result) {          
           encryptedFields[model].forEach(field => {
             if (result[field] !== undefined && result[field] !== null) {
               try {                
                 result[field] = decrypt(result[field]);
-              } catch (error) {
-                console.error(`❌ Erro ao decriptar campo ${field}:`, error);
-                // Em caso de erro, mantém o valor original (pode ser útil para migração)
+              } catch (error) {                
+                throw error;
               }
             }
           });
         }
       } 
       // Para arrays de resultados (findMany)
-      else {
-        result.forEach(item => {
+      else {        
+        result.forEach((item, index) => {
           encryptedFields[model].forEach(field => {
             if (item[field] !== undefined && item[field] !== null) {
               try {
                 item[field] = decrypt(item[field]);
               } catch (error) {
-                console.error(`❌ Erro ao decriptar campo ${field}:`, error);
+                throw error;
               }
             }
           });
