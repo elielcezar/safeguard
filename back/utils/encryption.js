@@ -1,9 +1,15 @@
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+// Garantir que dotenv seja carregado neste arquivo também
+dotenv.config();
+
 const algorithm = 'aes-256-gcm';
 
+// Verificar se MASTER_KEY existe
 if (!process.env.MASTER_KEY) {
-  console.log('MASTER_KEY não encontrada no ambiente, definindo manualmente');
-  process.env.MASTER_KEY = 'dee2107166b19e6121c7ce55e11fc90168b699162429acc1c18cac8784fa6f42';
+  console.error('ERRO: MASTER_KEY não encontrada no ambiente.');
+  process.exit(1); // Encerrar o processo se a chave não for encontrada
 }
 
 const MASTER_KEY = Buffer.from(process.env.MASTER_KEY, 'hex');
