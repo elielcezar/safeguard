@@ -13,8 +13,7 @@ const MASTER_KEY = process.env.MASTER_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!MASTER_KEY || !JWT_SECRET) {
-  console.error('ERRO: Variáveis de ambiente essenciais não foram carregadas.');
-  console.error('Verifique se o arquivo .env está no diretório correto e contém as variáveis necessárias.');
+  console.error('ERRO: Variáveis de ambiente essenciais não foram carregadas.');  
   process.exit(1);
 }
 
@@ -22,8 +21,8 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
-app.use(publicRoutes);
-app.use(auth, privateRoutes);
+app.use('/api', publicRoutes);
+app.use('/api', auth, privateRoutes);
 
 app.listen(6699, () => {
   console.log("Server is running on port 6699");

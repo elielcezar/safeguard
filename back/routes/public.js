@@ -42,12 +42,10 @@ router.post("/register", async (req, res) => {
             password: hashedPassword,
             createdAt: new Date()
         }
-    });
-    console.log('Usuário criado:', response);
+    });    
     res.status(201).json(response);
 
-  } catch (error) {
-    console.error('Erro ao criar usuário:', error);
+  } catch (error) {    
     res.status(500).json({
       message: 'Erro ao criar usuário',
       error: error.message
@@ -59,18 +57,17 @@ router.post("/login", async (req, res) => {
   const {email, password} = req.body;  
 
   try{
-
     const user = await prisma.user.findUnique({
       where: {email}
-    });  
-
+    }); 
+    
     if(!user){
       return res.status(401).json({
         message: 'Usuario nao encontrado. Por favor verifique suas credenciais.'
       });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, user.password);    
 
     if(!validPassword){
       return res.status(401).json({
@@ -81,7 +78,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign({
       userId: user.id,
       email: user.email
-    }, JWT_SECRET, {expiresIn: '1h'});
+    }, JWT_SECRET, {expiresIn: '1h'});   
 
     res.status(200).json({
       message: 'Login realizado com sucesso',
@@ -94,13 +91,12 @@ router.post("/login", async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('Erro ao fazer login:', error);
+  } catch (error) {    
     res.status(500).json({
       message: 'Erro ao fazer login',
       error: error.message
     });
   }
-
 });
+
 export default router;
