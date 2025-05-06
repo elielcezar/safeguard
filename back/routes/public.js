@@ -2,11 +2,21 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+
+// Garantir que dotenv seja carregado neste arquivo também
+dotenv.config();
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Verificar se JWT_SECRET foi carregado
+if (!JWT_SECRET) {
+  console.error('ERRO: JWT_SECRET não encontrado no ambiente.');
+  process.exit(1);
+}
 
 router.post("/register", async (req, res) => {
   const {name, email, password} = req.body;  
@@ -56,7 +66,7 @@ router.post("/login", async (req, res) => {
 
     if(!user){
       return res.status(401).json({
-        message: 'Erro ao fazer login, por favor verifique suas credenciais.'
+        message: 'Usuario nao encontrado. Por favor verifique suas credenciais.'
       });
     }
 
@@ -64,7 +74,7 @@ router.post("/login", async (req, res) => {
 
     if(!validPassword){
       return res.status(401).json({
-        message: 'Erro ao fazer login, por favor verifique suas credenciais.'
+        message: 'Senha não confere. Por favor verifique suas credenciais.'
       });
     }
 
