@@ -58,11 +58,24 @@ router.get("/password/:id", async (req, res) => {
 
 router.post("/new-password", async (req, res) => {
   try{
-    const { client, service, username, password, extra } = req.body;
+    const { clientId, service, username, password, extra } = req.body;
+
+    // Verificar se o cliente existe
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: clientId }
+      });
+      
+      if (!client) {
+        return res.status(400).json({
+          message: 'Cliente não encontrado'
+        });
+      }
+    }
 
     const newPassword = await prisma.pass.create({
       data: {
-        client,
+        clientId,  // Agora usando clientId diretamente
         service,
         username,
         password,
@@ -153,6 +166,63 @@ router.delete("/delete-password/:id", async (req, res) => {
     console.error('Erro ao excluir senha:', error);
     res.status(500).json({
       message: 'Erro ao excluir senha',
+      error: error.message
+    });
+  }
+});
+
+router.post("/clients", async (req, res) => {
+  console.log(req.body);
+  
+  try{
+    const { name } = req.body;
+
+    const existingClient = await prisma.client.findFirst({
+      where: { name }
+    });
+
+    if(existingClient){
+      return res.status(400).json({
+        message: 'Cliente já existe'
+      });
+    }
+    
+    const newClient = await prisma.client.create({
+      data: {
+        name
+      }
+    });    
+    res.status(200).json({
+      message: 'Cliente criado com sucesso',
+      client: newClient
+    });
+  } catch (error) {
+    console.error('Erro ao criar cliente:', error);
+    res.status(500).json({
+      message: 'Erro ao criar cliente',
+      error: error.message
+    });
+  }
+});
+
+// Adicione esta rota para listar todos os clientes
+router.get("/clients", async (req, res) => {
+  
+  try {
+    const clients = await prisma.client.findMany({
+      orderBy: {
+        name: 'asc'
+      }
+    });
+    
+    res.status(200).json({
+      message: 'Lista de clientes',
+      clients
+    });
+  } catch (error) {
+    console.error('Erro ao listar clientes:', error);
+    res.status(500).json({
+      message: 'Erro ao listar clientes',
       error: error.message
     });
   }

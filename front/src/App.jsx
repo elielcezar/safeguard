@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import PrivateRoute from './components/PrivateRoute';
 import NewPass from './pages/Pass/New';
 import EditPass from './pages/Pass/Edit';
+import NewClient from './pages/Client/New';
 import { Toaster } from './components/ui/toaster';
 
 export default function App() {  
@@ -28,6 +29,11 @@ export default function App() {
               <EditPass />
             </PrivateRoute>
           } />    
+          <Route path="/clients/new" element={
+            <PrivateRoute>
+              <NewClient />
+            </PrivateRoute>
+          } />
         </Routes>
       </BrowserRouter>
       <Toaster />
