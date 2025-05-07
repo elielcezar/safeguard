@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -19,13 +19,24 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon, CopyIcon, CheckIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Create() {
     const navigate = useNavigate();
     const { dismiss } = useToast();
     const [loading, setLoading] = useState(false);
+    const [loadingClients, setLoadingClients] = useState(true);
     
-    const [client, setClient] = useState('');
+    const [clientId, setClientId] = useState('');
+    const [clients, setClients] = useState([]);
     const [service, setService] = useState('');
     const [username, setUsername] = useState('');    
     const [password, setPassword] = useState('');
@@ -40,6 +51,27 @@ export default function Create() {
     const [generatedPassword, setGeneratedPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    // Buscar a lista de clientes ao carregar o componente
+    useEffect(() => {
+        async function fetchClients() {            
+            try {                
+                const response = await api.get('api/clients');                
+                setClients(response.data.clients || []);
+            } catch (error) {
+                console.error("Erro ao buscar clientes:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao carregar clientes",
+                    description: "Não foi possível carregar a lista de clientes.",
+                });
+            } finally {
+                setLoadingClients(false);
+            }
+        }
+        
+        fetchClients();
+    }, []);
 
     // Função para gerar senha aleatória
     const generatePassword = () => {
@@ -105,7 +137,7 @@ export default function Create() {
 
         try {
             await api.post('api/new-password', {
-                client,
+                clientId: parseInt(clientId),
                 service,
                 username,
                 password,
@@ -154,13 +186,38 @@ export default function Create() {
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-2">
                             <label htmlFor="client" className="text-sm font-medium">Cliente</label>
-                            <Input 
-                                id="client" 
-                                type="text" 
-                                placeholder="Cliente" 
-                                value={client} 
-                                onChange={(e) => setClient(e.target.value)} 
-                            />
+                            <Select value={clientId} onValueChange={setClientId}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Selecione um cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Clientes</SelectLabel>
+                                        {loadingClients ? (
+                                            <SelectItem value="loading" disabled>Carregando clientes...</SelectItem>
+                                        ) : clients.length === 0 ? (
+                                            <SelectItem value="empty" disabled>Nenhum cliente encontrado</SelectItem>
+                                        ) : (
+                                            clients
+                                                .filter(client => client && client.id)
+                                                .map(client => (
+                                                    <SelectItem key={client.id} value={client.id.toString()}>
+                                                        {client.name || `Cliente ${client.id}`}
+                                                    </SelectItem>
+                                                ))
+                                        )}
+                                    </SelectGroup>
+                                    <div className="p-2 border-t">
+                                        <Button 
+                                            variant="link" 
+                                            className="w-full justify-start p-2 text-sm" 
+                                            onClick={() => navigate('/client/new')}
+                                        >
+                                            + Adicionar novo cliente
+                                        </Button>
+                                    </div>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="service" className="text-sm font-medium">Serviço</label>
@@ -311,14 +368,14 @@ export default function Create() {
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-2">
-                        <Button onClick={generatePassword} className="w-full">
+                        <Button onClick={generatePassword} className="w-full" variant="outline">
                             Gerar Senha Aleatória
                         </Button>
                         <Button 
                             onClick={useGeneratedPassword} 
                             variant="outline" 
                             className="w-full" 
-                            disabled={!generatedPassword}
+                            disabled={!generatedPassword}                            
                         >
                             Usar Esta Senha
                         </Button>
