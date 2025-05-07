@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 // Garantir que dotenv seja carregado neste arquivo também
 dotenv.config();
@@ -16,6 +17,36 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   console.error('ERRO: JWT_SECRET não encontrado no ambiente.');
   process.exit(1);
+}
+
+// Função para verificar o token do reCAPTCHA
+async function verifyRecaptcha(token) {
+  try {    
+    // Determina se está em desenvolvimento
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    // Em desenvolvimento, sempre retorna true para facilitar os testes
+    if (isDevelopment) {
+      console.log('Ambiente de desenvolvimento: reCAPTCHA simulado');
+      return true;
+    }
+    
+    const response = await axios.post(
+      'https://www.google.com/recaptcha/api/siteverify',
+      null,
+      {
+        params: {
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: token
+        }
+      }
+    );
+    
+    return response.data.success;
+  } catch (error) {
+    console.error('Erro ao verificar reCAPTCHA:', error);
+    return false;
+  }
 }
 
 router.post("/register", async (req, res) => {
@@ -54,7 +85,23 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  const {email, password} = req.body;  
+  const {email, password, recaptchaToken} = req.body;
+  
+  // Verificar o token do reCAPTCHA
+  if (!recaptchaToken) {
+    return res.status(400).json({
+      message: 'Verificação de reCAPTCHA necessária'
+    });
+  }
+  
+  // Verificar o token com a API do Google
+  const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+  
+  if (!isRecaptchaValid) {
+    return res.status(400).json({
+      message: 'Verificação de reCAPTCHA falhou. Por favor, tente novamente.'
+    });
+  }
 
   try{
     const user = await prisma.user.findUnique({

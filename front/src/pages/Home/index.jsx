@@ -68,7 +68,7 @@ export default function Home({ children }) {
     try {
       setLoading(true);
       setError(null); // Limpa erros anteriores
-      const response = await api.get('/list-passwords');
+      const response = await api.get('api/list-passwords');
       
       console.log('Resposta da API:', response.data);
       
