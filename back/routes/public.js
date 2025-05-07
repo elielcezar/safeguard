@@ -1,9 +1,9 @@
+import dotenv from 'dotenv';
+import axios from 'axios';
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from '@prisma/client';
-import dotenv from 'dotenv';
-import axios from 'axios';
 
 // Garantir que dotenv seja carregado neste arquivo também
 dotenv.config();
@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 
 // Verificar se JWT_SECRET foi carregado
 if (!JWT_SECRET) {
@@ -31,6 +32,11 @@ async function verifyRecaptcha(token) {
       return true;
     }
     
+    // Log para debug
+    console.log('Ambiente de produção: verificando reCAPTCHA');
+    console.log('Token recebido:', token ? 'Token presente' : 'Token ausente');
+    console.log('Chave secreta configurada:', process.env.RECAPTCHA_SECRET_KEY ? 'Sim' : 'Não');
+    
     const response = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
       null,
@@ -41,6 +47,9 @@ async function verifyRecaptcha(token) {
         }
       }
     );
+    
+    // Log da resposta do Google
+    console.log('Resposta do Google reCAPTCHA:', response.data);
     
     return response.data.success;
   } catch (error) {
