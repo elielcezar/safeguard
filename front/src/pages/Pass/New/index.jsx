@@ -104,7 +104,7 @@ export default function Create() {
         setLoading(true);
 
         try {
-            await api.post('/new-password', {
+            await api.post('api/new-password', {
                 client,
                 service,
                 username,
@@ -144,9 +144,9 @@ export default function Create() {
 
                 <AppSidebar variant="inset"/>
 
-                <main className="bg-white p-6 relative flex w-full flex-1 flex-col md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
+                <main className="flex w-full flex-1 gap-5 p-6">
 
-                <Card className="mb-6">
+                <Card className="mb-6 flex-3/5 bg-white p-6 relative md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow border-none">
                     <CardHeader>
                         <CardTitle>Nova Senha</CardTitle>
                     </CardHeader>
@@ -211,7 +211,7 @@ export default function Create() {
                 </Card>                
 
                 {/* Card do gerador de senhas */}
-                <Card className="mb-6">
+                <Card className="mb-6 flex-2/5 bg-white p-6 relative md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow border-none">
                     <CardHeader>
                         <CardTitle>Gerador de Senhas</CardTitle>
                         <CardDescription>
@@ -272,7 +272,7 @@ export default function Create() {
                             />
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="flex items-center space-x-2">
                                 <Switch 
                                     id="uppercase" 

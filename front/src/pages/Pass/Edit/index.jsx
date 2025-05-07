@@ -36,7 +36,7 @@ export default function Create() {
 
     async function fetchPasswordData() {
         try {
-            const response = await api.get(`/password/${id}`);
+            const response = await api.get(`api/password/${id}`);
             const data = response.data.password;
             
             setClient(data.client || '');
