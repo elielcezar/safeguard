@@ -1,3 +1,6 @@
+# Reiniciar serviço com ecosystem
+pm2 start ecosystem.config.cjs --env production
+
 # Passos para Completar a Configuração no Servidor
 
 Siga estes passos para finalizar a configuração do seu aplicativo Safe Password Manager no servidor:
