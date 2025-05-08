@@ -58,29 +58,31 @@ export default function Create() {
         }        
         fetchClients();
 
-        // Carregar os dados da senha para edição
+        // Carregar os dados para edição
         if (id) {
             fetchPasswordData();
         }
-    }, [id]);
+    }, [id]);   
 
     async function fetchPasswordData() {
         try {
             const response = await api.get(`api/password/${id}`);
             const data = response.data.password;
-
-            // Check if client data exists and has an id
-            if (data.client && data.client.id) {                
-                setClientId(data.client.id.toString());
-            } else if (data.clientId) {                
-                setClientId(data.clientId.toString());
-            }
             
             setService(data.service || '');
             setUsername(data.username || '');
             setPassword(data.password || '');
             setExtra(data.extra || '');
-
+            
+            setTimeout(() => {
+                if (data.client && data.client.id) {
+                    const clientIdStr = data.client.id.toString();                    
+                    setClientId(clientIdStr);
+                } else if (data.clientId) {
+                    const clientIdStr = data.clientId.toString();                    
+                    setClientId(clientIdStr);
+                }
+            }, 100);
         } catch (error) {
             console.error("Erro ao carregar dados da senha:", error);
             toast({
