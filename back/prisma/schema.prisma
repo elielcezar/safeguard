@@ -20,7 +20,7 @@ model User {
 model Pass {
   id            Int       @id @default(autoincrement())
   clientId      Int?
-  client        Client?    @relation(fields: [clientId], references: [id])
+  client        Client?   @relation(fields: [clientId], references: [id])
   service       String?
   username      String?
   password      String?
