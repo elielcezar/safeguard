@@ -34,16 +34,13 @@ export default function Home({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [clients, setClients] = useState({});
   const navigate = useNavigate();
 
   // Busca os dados do usuário do localStorage
-  useEffect(() => {
-    //const user = JSON.parse(localStorage.getItem('user'));
-    //if (user) {
-    //  setUserData(user);
-    //}    
-    // Buscar a lista de senhas
+  useEffect(() => {   
     fetchPasswords();
+    fetchClients();
   }, []);
 
   // Filtra as senhas quando a busca ou a lista de senhas mudar
@@ -55,7 +52,7 @@ export default function Home({ children }) {
 
     const query = searchQuery.toLowerCase();
     const filtered = passwords.filter(password => 
-      (password.client && password.client.toLowerCase().includes(query)) ||
+      (password.client && password.client.name && password.client.name.toLowerCase().includes(query)) ||
       (password.service && password.service.toLowerCase().includes(query)) ||
       (password.username && password.username.toLowerCase().includes(query))
     );
@@ -70,39 +67,29 @@ export default function Home({ children }) {
       setError(null); // Limpa erros anteriores
       const response = await api.get('api/list-passwords');
       
-      console.log('Resposta da API:', response.data);
+      console.log('Resposta da API com dados do cliente:', response.data);
       
-      // Obtenha o array de senhas da resposta (pode estar em .passwords ou diretamente em .data)
+      // Obtenha o array de senhas da resposta
       let passwordsData = [];
       
       if (response.data && typeof response.data === 'object') {
         passwordsData = response.data.passwords;
       }
+
       setPasswords(passwordsData);
       setFilteredPasswords(passwordsData);
+
       
     } catch (error) {
       console.error("Erro ao buscar senhas:", error);
       
-      // Extrair informações detalhadas do erro
-      const statusCode = error.response?.status;
-      const statusText = error.response?.statusText;
-      const errorMessage = error.response?.data?.message || error.message;
-      
-      // Mensagem mais informativa
-      const errorDetails = statusCode 
-        ? `Erro ${statusCode} (${statusText}): ${errorMessage}` 
-        : `Erro: ${errorMessage}`;
-      
-      console.error("Detalhes do erro:", errorDetails);
-      
-      // Armazena o erro no estado
-      setError(errorDetails);
+      const errorMessage = error.message || "Erro desconhecido";
+      setError(errorMessage);
       
       toast({
         variant: "destructive",
         title: "Erro ao carregar senhas",
-        description: `${errorDetails}. Tente novamente mais tarde.`,
+        description: `${errorMessage}. Tente novamente mais tarde.`,
       });
     } finally {
       setLoading(false);
@@ -146,6 +133,23 @@ export default function Home({ children }) {
     setSearchQuery(e.target.value);
   };
 
+  // Adicione esta função para buscar os clientes
+  const fetchClients = async () => {
+    try {
+      const response = await api.get('api/clients');
+      if (response.data && response.data.clients) {
+        // Transformar em um objeto para fácil acesso por ID
+        const clientsMap = {};
+        response.data.clients.forEach(client => {
+          clientsMap[client.id] = client;
+        });
+        setClients(clientsMap);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       
@@ -153,7 +157,7 @@ export default function Home({ children }) {
 
           <AppSidebar variant="inset"/>
           
-          <main className="bg-white p-6 relative flex w-full flex-1 flex-col md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
+          <main className="p-6 relative flex w-full flex-1 flex-col">
             
               <div className="flex items-center mb-6">
                 <SidebarTrigger className="mr-4" />
@@ -209,7 +213,9 @@ export default function Home({ children }) {
                           <TableBody>
                             {filteredPasswords.map((password) => (
                               <TableRow key={password.id}>
-                                <TableCell className="font-medium">{password.client}</TableCell>
+                                <TableCell className="font-medium">
+                                  {clients[password.clientId]?.name || 'Cliente não encontrado'}                                 
+                                </TableCell>
                                 <TableCell>{password.service}</TableCell>
                                 <TableCell>{password.username}</TableCell>
                                 <TableCell>

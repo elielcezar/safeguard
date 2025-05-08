@@ -23,20 +23,41 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Create() {
     const navigate = useNavigate();
     const { dismiss } = useToast();
-    const { id } = useParams(); // Obter id diretamente dos parâmetros da URL
-    const [loading, setLoading] = useState(false);
-    const [client, setClient] = useState('');
+    const [loading, setLoading] = useState(false);    
+    
+    const { id } = useParams(); // Obter id diretamente dos parâmetros da URL    
+    const [clients, setClients] = useState([]);
+    const [loadingClients, setLoadingClients] = useState(true);
+    const [clientId, setClientId] = useState('');
     const [service, setService] = useState('');
     const [username, setUsername] = useState('');    
     const [password, setPassword] = useState('');
     const [extra, setExtra] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-    useEffect(() => {
+    useEffect(() => {  
+        async function fetchClients() {            
+            try {                
+                const response = await api.get('api/clients');                
+                setClients(response.data.clients || []);
+            } catch (error) {
+                console.error("Erro ao buscar clientes:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao carregar clientes",
+                    description: "Não foi possível carregar a lista de clientes.",
+                });
+            } finally {
+                setLoadingClients(false);
+            }
+        }        
+        fetchClients();
+
         // Carregar os dados da senha para edição
         if (id) {
             fetchPasswordData();
@@ -47,12 +68,19 @@ export default function Create() {
         try {
             const response = await api.get(`api/password/${id}`);
             const data = response.data.password;
+
+            // Check if client data exists and has an id
+            if (data.client && data.client.id) {                
+                setClientId(data.client.id.toString());
+            } else if (data.clientId) {                
+                setClientId(data.clientId.toString());
+            }
             
-            setClient(data.client || '');
             setService(data.service || '');
             setUsername(data.username || '');
             setPassword(data.password || '');
             setExtra(data.extra || '');
+
         } catch (error) {
             console.error("Erro ao carregar dados da senha:", error);
             toast({
@@ -68,8 +96,8 @@ export default function Create() {
         setLoading(true);
 
         try {
-            await api.put(`/update-password/${id}`, {
-                client,
+            await api.put(`api/update-password/${id}`, {
+                clientId: clientId ? parseInt(clientId) : null,
                 service,
                 username,
                 password,
@@ -136,13 +164,38 @@ export default function Create() {
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-2">
                             <label htmlFor="client" className="text-sm font-medium">Cliente</label>
-                            <Input 
-                                id="client" 
-                                type="text" 
-                                placeholder="Cliente" 
-                                value={client} 
-                                onChange={(e) => setClient(e.target.value)} 
-                            />
+                            <Select value={clientId} onValueChange={setClientId}>
+                                <SelectTrigger className="w-full w-full bg-background border-input w-full border-input">
+                                    <SelectValue placeholder="Selecione um cliente"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Clientes</SelectLabel>
+                                        {loadingClients ? (
+                                            <SelectItem value="loading" disabled>Carregando clientes...</SelectItem>
+                                        ) : clients.length === 0 ? (
+                                            <SelectItem value="empty" disabled>Nenhum cliente encontrado</SelectItem>
+                                        ) : (
+                                            clients
+                                                .filter(client => client && client.id)
+                                                .map(client => (
+                                                    <SelectItem key={client.id} value={client.id.toString()}>
+                                                        {client.name || `Cliente ${client.id}`}
+                                                    </SelectItem>
+                                                ))
+                                        )}
+                                    </SelectGroup>
+                                    <div className="p-2 border-t">
+                                        <Button 
+                                            variant="link" 
+                                            className="w-full justify-start p-2 text-sm" 
+                                            onClick={() => navigate('/client/new')}
+                                        >
+                                            + Adicionar novo cliente
+                                        </Button>
+                                    </div>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="service" className="text-sm font-medium">Serviço</label>
@@ -185,7 +238,7 @@ export default function Create() {
                         </div>
                         
                         <div className="flex gap-4 mt-4">
-                            <Button type="submit" className="flex-1 bg-black text-white cursor-pointer hover:bg-gray-800" variant="default" disabled={loading}>
+                            <Button type="submit" className="flex-1  text-white cursor-pointer hover:bg-gray-800" variant="default" disabled={loading}>
                                 {loading ? "Salvando..." : "Salvar"}
                             </Button>
                             <Button 

@@ -131,7 +131,7 @@ export default function Login() {
               </div>
             )}
             
-            <Button type="submit" className="w-full bg-black text-white cursor-pointer hover:bg-gray-800" variant="default" disabled={loading || !captchaToken}>
+            <Button type="submit" className="w-full text-white cursor-pointer hover:bg-gray-800" variant="default" disabled={loading || !captchaToken}>
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>

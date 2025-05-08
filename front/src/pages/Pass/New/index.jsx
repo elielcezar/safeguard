@@ -136,6 +136,12 @@ export default function Create() {
         setLoading(true);
 
         try {
+            /*console.log('clientId', clientId);
+            console.log('service', service);
+            console.log('username', username);
+            console.log('password', password);
+            console.log('extra', extra);*/
+
             await api.post('api/new-password', {
                 clientId: parseInt(clientId),
                 service,
@@ -187,8 +193,8 @@ export default function Create() {
                         <div className="space-y-2">
                             <label htmlFor="client" className="text-sm font-medium">Cliente</label>
                             <Select value={clientId} onValueChange={setClientId}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Selecione um cliente" />
+                                <SelectTrigger className="w-full w-full bg-background border-input w-full border-input">
+                                    <SelectValue placeholder="Selecione um cliente"/>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
@@ -260,8 +266,12 @@ export default function Create() {
                         
                         </div>
                         
-                        <Button type="submit" className="w-full bg-black text-white cursor-pointer hover:bg-gray-800 mt-6" variant="default" disabled={loading}>
-                        {loading ? "Salvando..." : "Salvar"}
+                        <Button 
+                          type="submit" 
+                          className="w-full mt-6 "                          
+                          disabled={loading}                          
+                        >
+                          {loading ? "Salvando..." : "Salvar"}
                         </Button>
                     </form>
                     </CardContent>
@@ -372,8 +382,7 @@ export default function Create() {
                             Gerar Senha Aleatória
                         </Button>
                         <Button 
-                            onClick={useGeneratedPassword} 
-                            variant="outline" 
+                            onClick={useGeneratedPassword}                             
                             className="w-full" 
                             disabled={!generatedPassword}                            
                         >

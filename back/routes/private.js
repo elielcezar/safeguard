@@ -13,7 +13,17 @@ router.get("/list-passwords", async (req, res) => {
         });
     }
     
-    const passwords = await prisma.pass.findMany();
+    const passwords = await prisma.pass.findMany({
+      include: {
+        client: true
+      }
+    });
+
+    // Log para debug
+    if (passwords.length > 0) {
+      console.log('Primeiro item (Prisma):', JSON.stringify(passwords[0], null, 2));
+      console.log('Client do primeiro item:', passwords[0].client);
+    }
 
     res.status(200).json({
       message: 'Lista de senhas',
@@ -34,7 +44,10 @@ router.get("/password/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     
     const password = await prisma.pass.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        client: true
+      }
     });
     
     if (!password) {
@@ -60,22 +73,14 @@ router.post("/new-password", async (req, res) => {
   try{
     const { clientId, service, username, password, extra } = req.body;
 
-    // Verificar se o cliente existe
-    if (clientId) {
-      const client = await prisma.client.findUnique({
-        where: { id: clientId }
-      });
-      
-      if (!client) {
-        return res.status(400).json({
-          message: 'Cliente não encontrado'
-        });
-      }
-    }
+    // Garantir que clientId seja um número
+    const clientIdNumber = clientId ? parseInt(clientId) : null;
+
+    console.log('clientId (tipo):', typeof clientIdNumber, clientIdNumber);
 
     const newPassword = await prisma.pass.create({
       data: {
-        clientId,  // Agora usando clientId diretamente
+        clientId: clientIdNumber,
         service,
         username,
         password,
@@ -99,24 +104,31 @@ router.post("/new-password", async (req, res) => {
 router.put("/update-password/:id", async (req, res) => {
   try{
     const id = parseInt(req.params.id);
-    const { client, service, username, password, extra } = req.body;
+    const { clientId, service, username, password, extra } = req.body;
     
-    // Verificar se a senha existe
-    const existingPassword = await prisma.pass.findUnique({
-      where: { id }
-    });
+    // Garantir que clientId seja um número
+    const clientIdNumber = clientId ? parseInt(clientId) : null;
     
-    if (!existingPassword) {
-      return res.status(404).json({
-        message: 'Senha não encontrada'
+    console.log('clientId (tipo) na atualização:', typeof clientIdNumber, clientIdNumber);
+    
+    // Verificar se o cliente existe
+    if (clientIdNumber) {
+      const clientExists = await prisma.client.findUnique({
+        where: { id: clientIdNumber }
       });
+      
+      if (!clientExists) {
+        return res.status(400).json({
+          message: 'Cliente não encontrado'
+        });
+      }
     }
     
     // Atualizar a senha
     const updatedPassword = await prisma.pass.update({
       where: { id },
       data: {
-        client,
+        clientId: clientIdNumber,
         service,
         username,
         password,

@@ -42,9 +42,9 @@ const data = {
    
 export function AppSidebar({...props}) {
   return (
-    <Sidebar collapsible="offcanvas" {...props} className="bg-transparent">
+    <Sidebar collapsible="icon" variant="inset" {...props}>
       
-      <SidebarHeader  className="bg-transparent">
+      <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">

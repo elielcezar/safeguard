@@ -66,35 +66,36 @@ export function encryptionMiddleware(prisma) {
       // Para resultados únicos
       if (!Array.isArray(result)) {
         if (result) {          
-          encryptedFields[model].forEach(field => {
-            if (result[field] !== undefined && result[field] !== null) {
-              try {                
-                result[field] = decrypt(result[field]);
-              } catch (error) {                
-                throw error;
-              }
-            }
-          });
+          // Decripta apenas os campos do modelo principal, não os relacionamentos
+          decryptFields(result, model);
         }
       } 
       // Para arrays de resultados (findMany)
       else {        
-        result.forEach((item, index) => {
-          encryptedFields[model].forEach(field => {
-            if (item[field] !== undefined && item[field] !== null) {
-              try {
-                item[field] = decrypt(item[field]);
-              } catch (error) {
-                throw error;
-              }
-            }
-          });
+        result.forEach((item) => {
+          // Decripta apenas os campos do modelo principal, não os relacionamentos
+          decryptFields(item, model);
         });
       }
     }
     
     return result;
   });  
+  
+  // Função auxiliar para decriptar campos
+  function decryptFields(item, model) {
+    encryptedFields[model].forEach(field => {
+      // Verifica se o campo existe e não é um objeto (relacionamento)
+      if (item[field] !== undefined && item[field] !== null && typeof item[field] === 'string') {
+        try {
+          item[field] = decrypt(item[field]);
+        } catch (error) {
+          console.error(`Erro ao decriptar campo ${field}:`, error);
+          // Não propaga o erro, apenas mantém o valor original
+        }
+      }
+    });
+  }
   
   return prisma;
 } 

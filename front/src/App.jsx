@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import PrivateRoute from './components/PrivateRoute';
@@ -8,34 +8,31 @@ import NewClient from './pages/Client/New';
 import { Toaster } from './components/ui/toaster';
 
 export default function App() {  
-
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/home" element={
-            <PrivateRoute>
-              <Home />
-            </PrivateRoute>
-          } />
-          <Route path="/pass/new" element={
-            <PrivateRoute>
-              <NewPass />
-            </PrivateRoute>
-          } />
-          <Route path="/pass/edit/:id" element={
-            <PrivateRoute>
-              <EditPass />
-            </PrivateRoute>
-          } />    
-          <Route path="/clients/new" element={
-            <PrivateRoute>
-              <NewClient />
-            </PrivateRoute>
-          } />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/home" element={
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        } />
+        <Route path="/pass/new" element={
+          <PrivateRoute>
+            <NewPass />
+          </PrivateRoute>
+        } />
+        <Route path="/pass/edit/:id" element={
+          <PrivateRoute>
+            <EditPass />
+          </PrivateRoute>
+        } />    
+        <Route path="/clients/new" element={
+          <PrivateRoute>
+            <NewClient />
+          </PrivateRoute>
+        } />
+      </Routes>
       <Toaster />
     </>
   )
