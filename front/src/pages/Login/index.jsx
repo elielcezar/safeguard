@@ -54,7 +54,20 @@ export default function Login() {
               recaptchaToken: captchaToken
           });
 
-          if (response.status === 200) {              
+          if (response.status === 200) {
+              // Verificar se o login requer 2FA
+              if (response.data.requireTwoFactor) {
+                  // Redirecionar para a tela de verificação de código
+                  navigate('/verify-code', { 
+                      state: { 
+                          tempToken: response.data.tempToken,
+                          user: response.data.user
+                      } 
+                  });
+                  return;
+              }
+              
+              // Login normal sem 2FA
               localStorage.setItem('token', response.data.token);              
               localStorage.setItem('user', JSON.stringify(response.data.user));              
               navigate('/home');

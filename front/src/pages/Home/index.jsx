@@ -41,6 +41,7 @@ export default function Home({ children }) {
   useEffect(() => {   
     fetchPasswords();
     fetchClients();
+    console.log('teste');
   }, []);
 
   // Filtra as senhas quando a busca ou a lista de senhas mudar
@@ -49,7 +50,6 @@ export default function Home({ children }) {
       setFilteredPasswords(passwords);
       return;
     }
-
     const query = searchQuery.toLowerCase();
     const filtered = passwords.filter(password => 
       (password.client && password.client.name && password.client.name.toLowerCase().includes(query)) ||

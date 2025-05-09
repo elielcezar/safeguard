@@ -5,6 +5,7 @@ import PrivateRoute from './components/PrivateRoute';
 import NewPass from './pages/Pass/New';
 import EditPass from './pages/Pass/Edit';
 import NewClient from './pages/Client/New';
+import VerifyCode from './pages/VerifyCode';
 import { Toaster } from './components/ui/toaster';
 
 export default function App() {  
@@ -12,6 +13,8 @@ export default function App() {
     <>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/verify-code" element={<VerifyCode />} />
         <Route path="/home" element={
           <PrivateRoute>
             <Home />
