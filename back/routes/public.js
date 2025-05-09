@@ -38,12 +38,7 @@ async function verifyRecaptcha(token) {
     if (isDevelopment) {
       console.log('Ambiente de desenvolvimento: reCAPTCHA simulado');
       return true;
-    }
-    
-    // Log para debug
-    console.log('Ambiente de produção: verificando reCAPTCHA');
-    console.log('Token recebido:', token ? 'Token presente' : 'Token ausente');
-    console.log('Chave secreta configurada:', process.env.RECAPTCHA_SECRET_KEY ? 'Sim' : 'Não');
+    }   
     
     const response = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
@@ -54,10 +49,7 @@ async function verifyRecaptcha(token) {
           response: token
         }
       }
-    );
-    
-    // Log da resposta do Google
-    console.log('Resposta do Google reCAPTCHA:', response.data);
+    );    
     
     return response.data.success;
   } catch (error) {
@@ -66,35 +58,23 @@ async function verifyRecaptcha(token) {
   }
 }
 
-// Função para enviar código 2FA via WhatsApp usando Twilio
+// Função para enviar código 2FA
 async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
   try {
     // Verificar ambiente de desenvolvimento
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    // Formatar número de telefone para garantir formato internacional
-    // Remover caracteres não numéricos do número
-    let formattedNumber = phoneNumber.replace(/\D/g, '');
-    
-    // Garantir que o número tenha o formato internacional (adicionar + se não tiver)
+    const isDevelopment = process.env.NODE_ENV === 'development';    
+    // Formatar número de telefone para garantir formato internacional    
+    let formattedNumber = phoneNumber.replace(/\D/g, '');        
     if (!formattedNumber.startsWith('+')) {
       formattedNumber = '+55' + formattedNumber;
-    }
-    
-    // Em ambiente de desenvolvimento, simular o envio se a variável SIMULATE_TWILIO for true
-    if (isDevelopment && process.env.SIMULATE_TWILIO === 'true') {
-      console.log(`[DEV] Código 2FA ${code} enviado para ${formattedNumber} via WhatsApp (simulado)`);
-      return true;
-    }        
+    }      
     
     const message = await twilioClient.messages.create({
       from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
       to: `whatsapp:${formattedNumber}`, 
       body: `Seu código de verificação é: ${code}. Válido por 10 minutos.`
-    });
+    });    
     
-    console.log(`[INFO] Mensagem enviada via WhatsApp. SID: ${message.sid}`);
-    console.log(`[INFO] Status da mensagem: ${message.status}`);
     return true;
   } catch (error) {
     console.error('[ERRO] Falha ao enviar mensagem WhatsApp:', error.message);
@@ -160,8 +140,7 @@ router.post("/login", async (req, res) => {
       message: 'Verificação de reCAPTCHA necessária'
     });
   }
-  
-  // Verificar o token com a API do Google
+
   const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
   
   if (!isRecaptchaValid) {
@@ -189,7 +168,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Gerar código 2FA (6 dígitos)
+    // Gerar código 2FA
     const twoFactorCode = crypto.randomInt(100000, 999999).toString();
     
     // Criar token temporário com o código 2FA
@@ -197,15 +176,14 @@ router.post("/login", async (req, res) => {
       userId: user.id,
       email: user.email,
       twoFactorCode: twoFactorCode,
-      step: '2fa-pending' // Indica que o 2FA está pendente
-    }, JWT_SECRET, {expiresIn: '10m'}); // Token válido por 10 minutos
+      step: '2fa-pending'
+    }, JWT_SECRET, {expiresIn: '10m'});
     
-    // Enviar código via WhatsApp (usando o número do telefone do usuário)
-    // Nota: Precisamos garantir que o usuário tenha um número de telefone cadastrado
+    // Enviar código via WhatsApp    
     if (!user.phoneNumber) {
       console.log(`[AVISO] Usuário ${user.email} não tem número de telefone cadastrado.`);
       
-      // No ambiente de desenvolvimento, permitir login sem 2FA se não houver número
+      // No ambiente de desenvolvimento, permitir login sem 2FA
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Bypass 2FA para ${user.email} - número não cadastrado`);
         
@@ -230,14 +208,11 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({
         message: 'Número de telefone não cadastrado. Contacte o administrador.'
       });
-    }
+    }    
     
-    console.log(`[INFO] Enviando código 2FA para usuário: ${user.email} (${user.phoneNumber})`);
     const messageSent = await sendTwoFactorCodeWhatsApp(user.phoneNumber, twoFactorCode);
     
     if (!messageSent) {
-      console.log(`[AVISO] Falha ao enviar código 2FA para ${user.email}`);
-      
       // No ambiente de desenvolvimento, permitir login sem 2FA se o envio falhar
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Bypass 2FA para ${user.email} - falha no envio`);
@@ -285,7 +260,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Nova rota para verificação do código 2FA
+// verificação do código 2FA
 router.post("/verify-2fa", async (req, res) => {
   const { tempToken, code } = req.body;
   
@@ -295,25 +270,21 @@ router.post("/verify-2fa", async (req, res) => {
     });
   }
   
-  try {
-    // Verificar o token temporário
-    const decoded = jwt.verify(tempToken, JWT_SECRET);
+  try {    
+    const decoded = jwt.verify(tempToken, JWT_SECRET);    
     
-    // Verificar se o token é do tipo esperado
     if (decoded.step !== '2fa-pending') {
       return res.status(400).json({
         message: 'Token inválido ou expirado'
       });
-    }
+    }    
     
-    // Verificar se o código coincide
     if (decoded.twoFactorCode !== code) {
       return res.status(401).json({
         message: 'Código de verificação inválido'
       });
-    }
+    }    
     
-    // Buscar usuário no banco de dados
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId }
     });
@@ -352,57 +323,6 @@ router.post("/verify-2fa", async (req, res) => {
     
     res.status(500).json({
       message: 'Erro ao verificar código',
-      error: error.message
-    });
-  }
-});
-
-// Endpoint de teste simples para WhatsApp
-router.post("/test-whatsapp", async (req, res) => {
-  const { phoneNumber, forceReal = false } = req.body;
-  
-  if (!phoneNumber) {
-    return res.status(400).json({
-      message: 'Número de telefone é obrigatório'
-    });
-  }
-  
-  // Se forceReal for true, desativamos temporariamente a simulação
-  const originalSimulateSetting = process.env.SIMULATE_TWILIO;
-  if (forceReal) {
-    process.env.SIMULATE_TWILIO = 'false';
-    console.log('[INFO] Teste forçando envio real, independente do ambiente');
-  }
-  
-  try {
-    const testCode = '123456';
-    const success = await sendTwoFactorCodeWhatsApp(phoneNumber, testCode);
-    
-    // Restaurar configuração original
-    if (forceReal) {
-      process.env.SIMULATE_TWILIO = originalSimulateSetting;
-    }
-    
-    if (success) {
-      return res.status(200).json({
-        message: forceReal ? 'Mensagem real de teste enviada com sucesso' : 'Mensagem de teste enviada com sucesso',
-        phoneNumber,
-        testCode,
-        real: forceReal
-      });
-    } else {
-      return res.status(500).json({
-        message: 'Falha ao enviar mensagem de teste'
-      });
-    }
-  } catch (error) {
-    // Restaurar configuração original em caso de erro
-    if (forceReal) {
-      process.env.SIMULATE_TWILIO = originalSimulateSetting;
-    }
-    
-    return res.status(500).json({
-      message: 'Erro ao enviar mensagem de teste',
       error: error.message
     });
   }
