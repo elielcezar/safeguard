@@ -5,6 +5,7 @@ import PrivateRoute from './components/PrivateRoute';
 import NewPass from './pages/Pass/New';
 import EditPass from './pages/Pass/Edit';
 import NewClient from './pages/Client/New';
+import UserProfile from './pages/User/Profile';
 import VerifyCode from './pages/VerifyCode';
 import { Toaster } from './components/ui/toaster';
 
@@ -33,6 +34,11 @@ export default function App() {
         <Route path="/clients/new" element={
           <PrivateRoute>
             <NewClient />
+          </PrivateRoute>
+        } />
+        <Route path="/user/profile" element={
+          <PrivateRoute>
+            <UserProfile />
           </PrivateRoute>
         } />
       </Routes>
