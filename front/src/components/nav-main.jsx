@@ -1,7 +1,6 @@
 import { PlusCircleIcon, LayoutDashboardIcon, UsersIcon } from "lucide-react"
 import { Link } from "react-router-dom"
-
-
+import { UserCircleIcon, LogOutIcon } from "lucide-react"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -55,6 +54,33 @@ export function NavMain() {
                   </Link>
                 </SidebarMenuButton>            
             </SidebarMenuItem>
+
+            <SidebarMenuItem className="flex items-center gap-2">
+              <SidebarMenuButton
+                  tooltip="Quick Create"
+                  asChild
+                  className="min-w-8 duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                >
+                  <Link to="/user/profile">              
+                    <UserCircleIcon />
+                    <span>Account</span>
+                  </Link>
+                </SidebarMenuButton>            
+            </SidebarMenuItem>
+
+            <SidebarMenuItem className="flex items-center gap-2">
+              <SidebarMenuButton
+                  tooltip="Quick Create"
+                  asChild
+                  className="min-w-8 duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                >
+                  <Link to="/clients/new">              
+                    <LogOutIcon />
+                    <span>Log out</span>
+                  </Link>
+                </SidebarMenuButton>            
+            </SidebarMenuItem>
+
           
 
         </SidebarMenu>        
