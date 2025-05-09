@@ -4,6 +4,8 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto'; // Para gerar código aleatório de 2FA
+import twilio from 'twilio'; // Para enviar mensagens via WhatsApp
 
 // Garantir que dotenv seja carregado neste arquivo também
 dotenv.config();
@@ -13,6 +15,12 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
+
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM;
 
 // Verificar se JWT_SECRET foi carregado
 if (!JWT_SECRET) {
@@ -30,12 +38,7 @@ async function verifyRecaptcha(token) {
     if (isDevelopment) {
       console.log('Ambiente de desenvolvimento: reCAPTCHA simulado');
       return true;
-    }
-    
-    // Log para debug
-    console.log('Ambiente de produção: verificando reCAPTCHA');
-    console.log('Token recebido:', token ? 'Token presente' : 'Token ausente');
-    console.log('Chave secreta configurada:', process.env.RECAPTCHA_SECRET_KEY ? 'Sim' : 'Não');
+    }   
     
     const response = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
@@ -46,14 +49,49 @@ async function verifyRecaptcha(token) {
           response: token
         }
       }
-    );
-    
-    // Log da resposta do Google
-    console.log('Resposta do Google reCAPTCHA:', response.data);
+    );    
     
     return response.data.success;
   } catch (error) {
     console.error('Erro ao verificar reCAPTCHA:', error);
+    return false;
+  }
+}
+
+// Função para enviar código 2FA
+async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
+  try {
+    // Verificar ambiente de desenvolvimento
+    const isDevelopment = process.env.NODE_ENV === 'development';    
+    // Formatar número de telefone para garantir formato internacional    
+    let formattedNumber = phoneNumber.replace(/\D/g, '');        
+    if (!formattedNumber.startsWith('+')) {
+      formattedNumber = '+55' + formattedNumber;
+    }      
+    
+    const message = await twilioClient.messages.create({
+      from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
+      to: `whatsapp:${formattedNumber}`, 
+      body: `Seu código de verificação é: ${code}. Válido por 10 minutos.`
+    });    
+    
+    return true;
+  } catch (error) {
+    console.error('[ERRO] Falha ao enviar mensagem WhatsApp:', error.message);
+    
+    // Logar detalhes adicionais do erro para diagnóstico
+    if (error.code) {
+      console.error('[ERRO] Código:', error.code);
+    }
+    
+    if (error.moreInfo) {
+      console.error('[ERRO] Mais informações:', error.moreInfo);
+    }
+    
+    if (error.status) {
+      console.error('[ERRO] Status HTTP:', error.status);
+    }
+    
     return false;
   }
 }
@@ -102,8 +140,7 @@ router.post("/login", async (req, res) => {
       message: 'Verificação de reCAPTCHA necessária'
     });
   }
-  
-  // Verificar o token com a API do Google
+
   const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
   
   if (!isRecaptchaValid) {
@@ -131,11 +168,140 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Gerar código 2FA
+    const twoFactorCode = crypto.randomInt(100000, 999999).toString();
+    
+    // Criar token temporário com o código 2FA
+    const tempToken = jwt.sign({
+      userId: user.id,
+      email: user.email,
+      twoFactorCode: twoFactorCode,
+      step: '2fa-pending'
+    }, JWT_SECRET, {expiresIn: '10m'});
+    
+    // Enviar código via WhatsApp    
+    if (!user.phoneNumber) {
+      console.log(`[AVISO] Usuário ${user.email} não tem número de telefone cadastrado.`);
+      
+      // No ambiente de desenvolvimento, permitir login sem 2FA
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV] Bypass 2FA para ${user.email} - número não cadastrado`);
+        
+        // Gerar token completo de acesso
+        const token = jwt.sign({
+          userId: user.id,
+          email: user.email
+        }, JWT_SECRET, {expiresIn: '1h'});
+        
+        return res.status(200).json({
+          message: 'Login realizado com sucesso (2FA ignorado em ambiente de desenvolvimento)',
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
+      }
+      
+      return res.status(400).json({
+        message: 'Número de telefone não cadastrado. Contacte o administrador.'
+      });
+    }    
+    
+    const messageSent = await sendTwoFactorCodeWhatsApp(user.phoneNumber, twoFactorCode);
+    
+    if (!messageSent) {
+      // No ambiente de desenvolvimento, permitir login sem 2FA se o envio falhar
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV] Bypass 2FA para ${user.email} - falha no envio`);
+        
+        // Gerar token completo de acesso
+        const token = jwt.sign({
+          userId: user.id,
+          email: user.email
+        }, JWT_SECRET, {expiresIn: '1h'});
+        
+        return res.status(200).json({
+          message: 'Login realizado com sucesso (2FA ignorado em ambiente de desenvolvimento)',
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
+      }
+      
+      return res.status(500).json({
+        message: 'Erro ao enviar código de verificação. Por favor, tente novamente.'
+      });
+    }
+    
+    // Retornar token temporário e informações básicas do usuário
+    res.status(200).json({
+      message: 'Primeira etapa concluída. Verifique o código enviado por WhatsApp.',
+      tempToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      },
+      requireTwoFactor: true
+    });
+
+  } catch (error) {    
+    res.status(500).json({
+      message: 'Erro ao fazer login',
+      error: error.message
+    });
+  }
+});
+
+// verificação do código 2FA
+router.post("/verify-2fa", async (req, res) => {
+  const { tempToken, code } = req.body;
+  
+  if (!tempToken || !code) {
+    return res.status(400).json({
+      message: 'Token temporário e código são obrigatórios'
+    });
+  }
+  
+  try {    
+    const decoded = jwt.verify(tempToken, JWT_SECRET);    
+    
+    if (decoded.step !== '2fa-pending') {
+      return res.status(400).json({
+        message: 'Token inválido ou expirado'
+      });
+    }    
+    
+    if (decoded.twoFactorCode !== code) {
+      return res.status(401).json({
+        message: 'Código de verificação inválido'
+      });
+    }    
+    
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+    
+    if (!user) {
+      return res.status(404).json({
+        message: 'Usuário não encontrado'
+      });
+    }
+    
+    // Gerar token de acesso completo
     const token = jwt.sign({
       userId: user.id,
       email: user.email
-    }, JWT_SECRET, {expiresIn: '1h'});   
-
+    }, JWT_SECRET, { expiresIn: '1h' });
+    
+    // Retornar token de acesso e informações do usuário
     res.status(200).json({
       message: 'Login realizado com sucesso',
       token,
@@ -146,10 +312,17 @@ router.post("/login", async (req, res) => {
         role: user.role
       }
     });
-
-  } catch (error) {    
+    
+  } catch (error) {
+    // Tratar erros de token expirado
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message: 'Tempo para verificação expirado. Por favor, faça login novamente.'
+      });
+    }
+    
     res.status(500).json({
-      message: 'Erro ao fazer login',
+      message: 'Erro ao verificar código',
       error: error.message
     });
   }

@@ -40,7 +40,7 @@ export default function Home({ children }) {
   // Busca os dados do usuário do localStorage
   useEffect(() => {   
     fetchPasswords();
-    fetchClients();
+    fetchClients();    
   }, []);
 
   // Filtra as senhas quando a busca ou a lista de senhas mudar
@@ -49,7 +49,6 @@ export default function Home({ children }) {
       setFilteredPasswords(passwords);
       return;
     }
-
     const query = searchQuery.toLowerCase();
     const filtered = passwords.filter(password => 
       (password.client && password.client.name && password.client.name.toLowerCase().includes(query)) ||
@@ -66,9 +65,7 @@ export default function Home({ children }) {
       setLoading(true);
       setError(null); // Limpa erros anteriores
       const response = await api.get('api/list-passwords');
-      
-      console.log('Resposta da API com dados do cliente:', response.data);
-      
+            
       // Obtenha o array de senhas da resposta
       let passwordsData = [];
       
