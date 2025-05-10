@@ -61,35 +61,35 @@ async function verifyRecaptcha(token) {
 // Função para enviar código 2FA
 async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
   try {
-    // Verificar ambiente de desenvolvimento
-    const isDevelopment = process.env.NODE_ENV === 'development';    
-    // Formatar número de telefone para garantir formato internacional    
-    let formattedNumber = phoneNumber.replace(/\D/g, '');        
-    if (!formattedNumber.startsWith('+')) {
+    
+    //const isDevelopment = process.env.NODE_ENV === 'development';        
+    
+    if (!phoneNumber) {
+      console.error('[ERRO] Número de telefone não fornecido para envio do código 2FA');
+      return false;
+    }
+    let formattedNumber = '+55' + phoneNumber;        
+    
+    /*if (!formattedNumber.startsWith('+')) {
       formattedNumber = '+55' + formattedNumber;
-    }      
+    }      */
     
     const message = await twilioClient.messages.create({
       from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
       to: `whatsapp:${formattedNumber}`, 
-      contentSid: 'HX5361953b266c22e1bfda373a7f26d0b4',
-      contentVariables: JSON.stringify({ "1": code })
-      //body: `Seu código de verificação é: ${code}. Válido por 10 minutos.`
-    });    
-    
-    return true;
+      body: `Seu código de verificação é::: ${code}. Válido por 10 minutos.`
+    });   
+    return true;    
+
   } catch (error) {
-    console.error('[ERRO] Falha ao enviar mensagem WhatsApp:', error.message);
+    console.error('[ERRO] Falha ao enviar mensagem WhatsApp:', error.message);    
     
-    // Logar detalhes adicionais do erro para diagnóstico
     if (error.code) {
       console.error('[ERRO] Código:', error.code);
-    }
-    
+    }    
     if (error.moreInfo) {
       console.error('[ERRO] Mais informações:', error.moreInfo);
-    }
-    
+    }    
     if (error.status) {
       console.error('[ERRO] Status HTTP:', error.status);
     }
@@ -99,9 +99,8 @@ async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
 }
 
 router.post("/login", async (req, res) => {
-  const {email, password, recaptchaToken} = req.body;
+  const {email, password, recaptchaToken} = req.body;  
   
-  // Verificar o token do reCAPTCHA
   if (!recaptchaToken) {
     return res.status(400).json({
       message: 'Verificação de reCAPTCHA necessária'
@@ -137,17 +136,20 @@ router.post("/login", async (req, res) => {
 
     // Gerar código 2FA
     const twoFactorCode = crypto.randomInt(100000, 999999).toString();
+
+    console.log(`Seu código de verificação é::: ${twoFactorCode}. Válido por 10 minutos.`);
     
-    // Criar token temporário com o código 2FA
+    // Token temporário com o código 2FA
     const tempToken = jwt.sign({
       userId: user.id,
       email: user.email,
       twoFactorCode: twoFactorCode,
       step: '2fa-pending'
-    }, JWT_SECRET, {expiresIn: '10m'});
+    }, JWT_SECRET, {expiresIn: '10m'});    
     
-    // Enviar código via WhatsApp    
-    if (!user.phoneNumber) {      
+    // Verificar se o número de telefone existe antes de tentar enviar o código
+    if (!user.phoneNumber) {
+      console.log(`Número de telefone não cadastrado para o usuário: ${user.email}`);
       
       // No ambiente de desenvolvimento, permitir login sem 2FA
       if (process.env.NODE_ENV === 'development') {
@@ -157,7 +159,7 @@ router.post("/login", async (req, res) => {
         const token = jwt.sign({
           userId: user.id,
           email: user.email
-        }, JWT_SECRET, {expiresIn: '1h'});
+        }, JWT_SECRET, {expiresIn: '12h'});
         
         return res.status(200).json({
           message: 'Login realizado com sucesso (2FA ignorado em ambiente de desenvolvimento)',
@@ -174,9 +176,9 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({
         message: 'Número de telefone não cadastrado. Contacte o administrador.'
       });
-    }    
+    }
     
-    const messageSent = await sendTwoFactorCodeWhatsApp(user.phoneNumber, twoFactorCode);
+    const messageSent = await sendTwoFactorCodeWhatsApp(user.phoneNumber, twoFactorCode);    
     
     if (!messageSent) {
       // No ambiente de desenvolvimento, permitir login sem 2FA se o envio falhar
