@@ -72,7 +72,9 @@ async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
     const message = await twilioClient.messages.create({
       from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
       to: `whatsapp:${formattedNumber}`, 
-      body: `Seu código de verificação é: ${code}. Válido por 10 minutos.`
+      contentSid: 'HX5361953b266c22e1bfda373a7f26d0b4',
+      contentVariables: JSON.stringify({ "1": code })
+      //body: `Seu código de verificação é: ${code}. Válido por 10 minutos.`
     });    
     
     return true;
@@ -145,8 +147,7 @@ router.post("/login", async (req, res) => {
     }, JWT_SECRET, {expiresIn: '10m'});
     
     // Enviar código via WhatsApp    
-    if (!user.phoneNumber) {
-      console.log(`[AVISO] Usuário ${user.email} não tem número de telefone cadastrado.`);
+    if (!user.phoneNumber) {      
       
       // No ambiente de desenvolvimento, permitir login sem 2FA
       if (process.env.NODE_ENV === 'development') {

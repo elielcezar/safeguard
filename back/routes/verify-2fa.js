@@ -58,7 +58,7 @@ router.post("/verify-2fa", async (req, res) => {
     const token = jwt.sign({
       userId: user.id,
       email: user.email
-    }, JWT_SECRET, { expiresIn: '1h' });
+    }, JWT_SECRET, { expiresIn: '12h' });
     
     // Retornar token de acesso e informações do usuário
     res.status(200).json({
