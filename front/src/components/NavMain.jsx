@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom"
 import { PlusCircleIcon, LayoutDashboardIcon, UsersIcon } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { UserCircleIcon, LogOutIcon } from "lucide-react"
@@ -9,17 +8,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
 
 
 export function NavMain() {
   const location = useLocation();
-  const navigate = useNavigate();
 
   const handleLogout = () => {    
     localStorage.removeItem('token');
     localStorage.removeItem('user');    
-    navigate('/');
+    // Redirecionar diretamente para a página inicial, forçando um reload
+    window.location.href = '/';
   };
   
   // Função para verificar se um caminho está ativo
