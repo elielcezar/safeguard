@@ -1,19 +1,26 @@
 import './config.js';
 import express from "express";
-import publicRoutes from "./routes/public.js";  
-import privateRoutes from "./routes/private.js";
 import auth from './middlewares/auth.js';
 import cors from 'cors';
+
+import register from "./routes/register.js";
+import login from "./routes/login.js";
+import verify2fa from "./routes/verify-2fa.js";
+import listPasswords from "./routes/list-passwords.js";
+import password from "./routes/password.js";
+import newPassword from "./routes/new-password.js";
+import updatePassword from "./routes/update-password.js";
+import deletePassword from "./routes/delete-password.js";
+import newClient from "./routes/new-client.js";
+import clients from "./routes/clients.js";
 
 // Verificar se as variáveis essenciais foram carregadas
 const MASTER_KEY = process.env.MASTER_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
-
 console.log('Verificando variáveis no servidor:');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('RECAPTCHA_SECRET_KEY configurada:', RECAPTCHA_SECRET_KEY ? 'Sim' : 'Não');
-
 if (!MASTER_KEY || !JWT_SECRET) {
   console.error('ERRO: Variáveis de ambiente essenciais não foram carregadas.');  
   process.exit(1);
@@ -23,8 +30,18 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
-app.use('/api', publicRoutes);
-app.use('/api', auth, privateRoutes);
+//Public
+app.use('/api', register);
+app.use('/api', login);
+app.use('/api', verify2fa);
+//Private
+app.use('/api', auth, listPasswords);
+app.use('/api', auth, password);
+app.use('/api', auth, newPassword);
+app.use('/api', auth, updatePassword);
+app.use('/api', auth, deletePassword);
+app.use('/api', auth, newClient);
+app.use('/api', auth, clients);
 
 const PORT = process.env.PORT || 6699;
 app.listen(PORT, () => {
