@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 import api from '@/services/api';
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil } from "lucide-react";
+import PageTitle from "@/components/PageTitle";
 import {
   Card,
   CardContent,
@@ -119,12 +120,6 @@ export default function Home({ children }) {
     }));
   };
 
-  const handleLogout = () => {    
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');    
-    navigate('/');
-  };
-
   // Função para lidar com a mudança na busca
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -156,20 +151,9 @@ export default function Home({ children }) {
           
           <main className="p-6 relative flex w-full flex-1 flex-col">
             
-              <div className="flex items-center mb-6">
-                <SidebarTrigger className="mr-4" />
-                <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-                <Button variant="outline" onClick={handleLogout} className="ml-auto">
-                  Sair
-                </Button>
-              </div>
+              <PageTitle title="Dashboard"/>
                 
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    <span>Senhas Salvas</span>                   
-                  </CardTitle>                 
-                </CardHeader>
+              <Card className="mb-6">                
                 <CardContent>
                   {loading ? (
                     <div className="flex justify-center items-center py-8">

@@ -13,6 +13,10 @@ import updatePassword from "./routes/update-password.js";
 import deletePassword from "./routes/delete-password.js";
 import newClient from "./routes/new-client.js";
 import clients from "./routes/clients.js";
+import client from "./routes/client.js";
+import updateUser from "./routes/update-user.js";
+import updateClient from "./routes/update-client.js";
+import deleteClient from "./routes/delete-client.js";
 
 // Verificar se as variáveis essenciais foram carregadas
 const MASTER_KEY = process.env.MASTER_KEY;
@@ -42,6 +46,10 @@ app.use('/api', auth, updatePassword);
 app.use('/api', auth, deletePassword);
 app.use('/api', auth, newClient);
 app.use('/api', auth, clients);
+app.use('/api', auth, client);
+app.use('/api', auth, updateUser);
+app.use('/api', auth, updateClient);
+app.use('/api', auth, deleteClient);
 
 const PORT = process.env.PORT || 6699;
 app.listen(PORT, () => {

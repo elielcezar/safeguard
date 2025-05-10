@@ -1,28 +1,10 @@
-import { 
-  ArrowUpCircleIcon,
-  BarChartIcon,
-  CameraIcon,
-  ClipboardListIcon,
-  DatabaseIcon,
-  FileCodeIcon,
-  FileIcon,
-  FileTextIcon,
-  FolderIcon,
-  HelpCircleIcon,
-  LayoutDashboardIcon,
-  ListIcon,
-  SearchIcon,
-  SettingsIcon,
-  UsersIcon,
-} from "lucide-react"
-import { NavMain } from "@/components/nav-main"
+import { NavMain } from "@/components/NavMain"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
@@ -30,6 +12,7 @@ import {
 } from "@/components/ui/sidebar"
   
 export function AppSidebar({...props}) {
+    
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, useToast } from "@/components/ui/use-toast";
 import api from '@/services/api';
+import PageTitle from "@/components/PageTitle";
+
 import {
   Dialog,
   DialogContent,
@@ -30,18 +32,20 @@ export default function Profile() {
   
   const navigate = useNavigate();
   const { dismiss } = useToast();
-  const [loading, setLoading] = useState(false);
-
+  const [loading, setLoading] = useState(false); 
+  
+  const [id, setId] = useState('');
   const [name, setName] = useState('');  
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');    
+  const [password, setPassword] = useState(''); 
   
   // Busca os dados do usuário do localStorage
   useEffect(() => {
     const userJson = localStorage.getItem('user');
     if (userJson) {
       try {
-        const user = JSON.parse(userJson);        
+        const user = JSON.parse(userJson);  
+        setId(user.id);
         setName(user.name || '');
         setEmail(user.email || '');
         setPassword(user.password || '');
@@ -54,10 +58,27 @@ export default function Profile() {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    console.log(name, email, password);
+    try {      
+      console.log(id, name, email, password);    
 
-    try {
-      await api.put('/api/users', { name, email, password });
+      if (!id || !name || !email) {
+        toast({
+          variant: "destructive",
+          title: 'Erro ao atualizar usuário',
+          description: 'Ocorreu um erro ao atualizar o usuário',
+        });
+      }
+  
+      const userData = {
+        id,
+        name,
+        email
+      } 
+      if (password) {
+        userData.password = password;
+      }    
+      console.log(userData);
+      await api.put(`api/update-user/${id}`, userData);
       toast({
         title: 'Usuário atualizado com sucesso',
         description: 'O usuário foi atualizado com sucesso',
@@ -86,14 +107,9 @@ export default function Profile() {
 
                 <main className="flex w-full flex-1 gap-5 p-6 flex-col">
 
-                  <h1>Profile</h1>
+                  <PageTitle title="Profile"/>
 
-                  <Card className="mb-6">
-                      <CardHeader>
-                        <CardDescription>
-                          Informações da sua conta
-                        </CardDescription>
-                      </CardHeader>
+                  <Card className="mb-6">                     
                       <CardContent>
                         <form onSubmit={handleSubmit}>                          
                           <div className="space-y-2">

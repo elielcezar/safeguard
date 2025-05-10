@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react'
 import api from '@/services/api'
 import { useNavigate } from 'react-router-dom'
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { toast, useToast } from "@/components/ui/use-toast"
+import { toast } from "@/components/ui/use-toast"
 import { Pencil } from "lucide-react";
+import PageTitle from "@/components/PageTitle";
+import { Loader2 } from "lucide-react";
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+  CardContent  
 } from "@/components/ui/card";
 import {
     Table,
-    TableBody,
-    TableCaption,
+    TableBody,    
     TableCell,
     TableHead,
     TableHeader,
@@ -26,15 +23,13 @@ import {
   } from "@/components/ui/table";
 
 export default function NewClient() {
-    const navigate = useNavigate();
-    const { dismiss } = useToast();
+    const navigate = useNavigate();    
     const [loading, setLoading] = useState(false);
     const [name, setName] = useState('');
     const [clients, setClients] = useState([]);
 
     useEffect(() => {           
-        fetchClients();
-        console.log('clients', clients);
+        fetchClients();        
     }, []);
 
     const fetchClients = async () => {
@@ -42,24 +37,21 @@ export default function NewClient() {
         setClients(response.data.clients);          
     }     
 
-    console.log(clients);    
-
-  
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             await api.post('/api/clients', { name });
+            setName(''); // Limpa o campo após criar
 
             toast({
                 title: 'Cliente criado com sucesso',
                 description: 'O cliente foi criado com sucesso',
             });
-            setTimeout(() => {
-                navigate('/');
-                dismiss();
-            }, 2000);
+            
+            // Atualiza a lista de clientes
+            await fetchClients();
+            
         } catch (error) {
             toast({
                 title: 'Erro ao criar cliente',
@@ -76,17 +68,14 @@ export default function NewClient() {
             <AppSidebar variant="inset"/>
 
             <main className="flex w-full flex-1 gap-5 p-6 flex-col">
+
+                <PageTitle title="Clientes"/>
                 
              
-                <Card className="mb-6">
-                    <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
-                        <span>Novo Cliente</span>                   
-                    </CardTitle>                 
-                    </CardHeader>
+                <Card className="mb-6">                   
                     <CardContent>                        
-                        <form onSubmit={handleSubmit}>
-                            <div className="space-y-2">
+                        <form onSubmit={handleSubmit} className="space-y-2 flex mb-7 mt-2">
+                            <div className="space-y-2 flex-4/5">
                                 <label htmlFor="name" className="text-sm font-medium hidden">Nome</label>
                                 <Input 
                                     id="name" 
@@ -94,9 +83,10 @@ export default function NewClient() {
                                     placeholder="Nome" 
                                     value={name} 
                                     onChange={(e) => setName(e.target.value)}
+                                    className="w-full"
                                 />
                             </div>
-                            <Button type="submit" disabled={loading}>
+                            <Button type="submit" disabled={loading} className="flex-1/5 ml-5">
                                 {loading ? 'Salvando...' : 'Salvar'}
                             </Button>
                         </form>                        
@@ -137,7 +127,7 @@ export default function NewClient() {
                                             </TableCell>                            
                                         </TableRow>
                                     ))}
-                                </TableBody>'
+                                </TableBody>
                             </Table>                      
                         </>
                     ) : (

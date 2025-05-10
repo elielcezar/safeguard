@@ -2,18 +2,24 @@ import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, useToast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { CopyIcon, CheckIcon } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogClose,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Card,
@@ -39,6 +45,15 @@ export default function Create() {
     const [password, setPassword] = useState('');
     const [extra, setExtra] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    // Estados para o gerador de senhas
+    const [passwordLength, setPasswordLength] = useState(12);
+    const [includeUppercase, setIncludeUppercase] = useState(true);
+    const [includeLowercase, setIncludeLowercase] = useState(true);
+    const [includeNumbers, setIncludeNumbers] = useState(true);
+    const [includeSymbols, setIncludeSymbols] = useState(true);
+    const [generatedPassword, setGeneratedPassword] = useState('');    
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {  
         async function fetchClients() {            
@@ -92,6 +107,55 @@ export default function Create() {
             });
         }
     }
+
+    // Função para gerar senha aleatória
+    const generatePassword = () => {
+        const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const lowercase = "abcdefghijklmnopqrstuvwxyz";
+        const numbers = "0123456789";
+        const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+        
+        let characters = "";
+        if (includeUppercase) characters += uppercase;
+        if (includeLowercase) characters += lowercase;
+        if (includeNumbers) characters += numbers;
+        if (includeSymbols) characters += symbols;
+        
+        // Se nenhuma opção for selecionada, usa pelo menos letras minúsculas
+        if (!characters) {
+            characters = lowercase;
+            setIncludeLowercase(true);
+        }
+        
+        let generated = "";
+        for (let i = 0; i < passwordLength; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            generated += characters.charAt(randomIndex);
+        }
+
+        setGeneratedPassword(generated);
+    };
+
+    // Função para copiar a senha gerada para a área de transferência
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedPassword);
+        setCopied(true);
+        
+        toast({
+            title: "Senha copiada!",
+            description: "A senha foi copiada para a área de transferência.",
+        });
+        
+        // Resetar o ícone de copiado após 2 segundos
+        setTimeout(() => {
+            setCopied(false);
+        }, 2000);
+    };
+
+    // Função para usar a senha gerada no formulário
+    const useGeneratedPassword = () => {
+        setPassword(generatedPassword);       
+    };
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -227,7 +291,110 @@ export default function Create() {
                                 placeholder="Password" 
                                 value={password} 
                                 onChange={(e) => setPassword(e.target.value)} 
-                            />
+                            />                           
+                            <Dialog className="ml-2 flex-1/3">
+                                <DialogTrigger>
+                                    <span className="p-2 rounded-md bg-primary text-white p-1 ml-5 cursor-pointer">Gerar Senha</span>
+                                </DialogTrigger>      
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Gerador de Senhas</DialogTitle>                        
+                                    </DialogHeader>
+                                    {/* Campo para exibir a senha gerada */}
+                                    <div className="space-y-2">
+                                        <label htmlFor="generatedPassword" className="text-sm font-medium">Senha Gerada</label>
+                                        <div className="flex">
+                                            <div className="relative flex-grow">
+                                                <Input 
+                                                    id="generatedPassword" 
+                                                    type="text" 
+                                                    value={generatedPassword} 
+                                                    readOnly 
+                                                    placeholder="A senha gerada aparecerá aqui"
+                                                    className="pr-10" 
+                                                />                                    
+                                                <button 
+                                                    type="button" 
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1" 
+                                                    onClick={copyToClipboard}
+                                                    disabled={!generatedPassword}
+                                                >
+                                                    {copied ? (
+                                                        <CheckIcon className="h-4 w-4 text-green-500" />
+                                                    ) : (
+                                                        <CopyIcon className="h-4 w-4 text-gray-500" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between mb-2">
+                                            <Label>Tamanho da senha: {passwordLength}</Label>
+                                        </div>
+                                        <Slider 
+                                            value={[passwordLength]} 
+                                            min={4} 
+                                            max={32} 
+                                            step={1} 
+                                            onValueChange={(value) => setPasswordLength(value[0])} 
+                                        />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch 
+                                                id="uppercase" 
+                                                checked={includeUppercase} 
+                                                onCheckedChange={setIncludeUppercase} 
+                                            />
+                                            <Label htmlFor="uppercase">Letras maiúsculas (A-Z)</Label>
+                                        </div>
+                                        
+                                        <div className="flex items-center space-x-2">
+                                            <Switch 
+                                                id="lowercase" 
+                                                checked={includeLowercase} 
+                                                onCheckedChange={setIncludeLowercase} 
+                                            />
+                                            <Label htmlFor="lowercase">Letras minúsculas (a-z)</Label>
+                                        </div>
+                                        
+                                        <div className="flex items-center space-x-2">
+                                            <Switch 
+                                                id="numbers" 
+                                                checked={includeNumbers} 
+                                                onCheckedChange={setIncludeNumbers} 
+                                            />
+                                            <Label htmlFor="numbers">Números (0-9)</Label>
+                                        </div>
+                                        
+                                        <div className="flex items-center space-x-2">
+                                            <Switch 
+                                                id="symbols" 
+                                                checked={includeSymbols} 
+                                                onCheckedChange={setIncludeSymbols} 
+                                            />
+                                            <Label htmlFor="symbols">Símbolos (!@#$)</Label>
+                                        </div>
+
+                                        <Button onClick={generatePassword} className="w-full">
+                                            Gerar Senha Aleatória
+                                        </Button>
+                                        <DialogClose asChild>
+                                            <Button 
+                                                onClick={useGeneratedPassword}                             
+                                                className="w-full" 
+                                                disabled={!generatedPassword}
+                                                 variant="outline"
+                                            >
+                                                Usar Esta Senha
+                                            </Button>
+                                        </DialogClose>
+                                    </div>
+                                </DialogContent>                     
+                            </Dialog>
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="extra" className="text-sm font-medium">Extra</label>
