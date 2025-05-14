@@ -69,17 +69,13 @@ async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
       return false;
     }
     let formattedNumber = '+55' + phoneNumber;        
-    
-    /*if (!formattedNumber.startsWith('+')) {
-      formattedNumber = '+55' + formattedNumber;
-    }      */
-    
+   
     const message = await twilioClient.messages.create({
-      from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
-      to: `whatsapp:${formattedNumber}`, 
-      body: `Seu código de verificação é::: ${code}. Válido por 10 minutos.`
+      from: process.env.TWILIO_PHONE_FROM, 
+      to: formattedNumber, 
+      body: `Seu código de verificação é: ${code}. Válido por 10 minutos.`
     });   
-    return true;    
+    return true;  
 
   } catch (error) {
     console.error('[ERRO] Falha ao enviar mensagem WhatsApp:', error.message);    
