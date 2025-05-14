@@ -131,9 +131,7 @@ router.post("/login", async (req, res) => {
     }
 
     // Gerar código 2FA
-    const twoFactorCode = crypto.randomInt(100000, 999999).toString();
-
-    console.log(`Seu código de verificação é::: ${twoFactorCode}. Válido por 10 minutos.`);
+    const twoFactorCode = crypto.randomInt(100000, 999999).toString();    
     
     // Token temporário com o código 2FA
     const tempToken = jwt.sign({
@@ -141,16 +139,12 @@ router.post("/login", async (req, res) => {
       email: user.email,
       twoFactorCode: twoFactorCode,
       step: '2fa-pending'
-    }, JWT_SECRET, {expiresIn: '10m'});    
+    }, JWT_SECRET, {expiresIn: '10m'});   
     
-    // Verificar se o número de telefone existe antes de tentar enviar o código
     if (!user.phoneNumber) {
-      console.log(`Número de telefone não cadastrado para o usuário: ${user.email}`);
-      
       // No ambiente de desenvolvimento, permitir login sem 2FA
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[DEV] Bypass 2FA para ${user.email} - número não cadastrado`);
-        
+
         // Gerar token completo de acesso
         const token = jwt.sign({
           userId: user.id,
@@ -179,8 +173,6 @@ router.post("/login", async (req, res) => {
     if (!messageSent) {
       // No ambiente de desenvolvimento, permitir login sem 2FA se o envio falhar
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[DEV] Bypass 2FA para ${user.email} - falha no envio`);
-        
         // Gerar token completo de acesso
         const token = jwt.sign({
           userId: user.id,
