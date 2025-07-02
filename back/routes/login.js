@@ -83,62 +83,18 @@ async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
       console.error('[WhatsApp] TWILIO_WHATSAPP_FROM não configurado');
       return false;
     }
+    let formattedNumber = '+55' + phoneNumber;        
     
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const isProduction = process.env.NODE_ENV === 'production';
+    /*if (!formattedNumber.startsWith('+')) {
+      formattedNumber = '+55' + formattedNumber;
+    }      */
     
-    const fromWhatsApp = `whatsapp:${TWILIO_WHATSAPP_FROM}`;
-    const toWhatsApp = `whatsapp:${formattedNumber}`;
-    let message;    
-    
-    // MÉTODO 1: Template aprovado (produção)
-    if (isProduction && process.env.TWILIO_WHATSAPP_TEMPLATE_SID) {
-      try {
-        console.log('[WhatsApp] Tentando envio via template aprovado...');
-        
-        message = await twilioClient.messages.create({
-          from: fromWhatsApp,
-          to: toWhatsApp,
-          contentSid: process.env.TWILIO_WHATSAPP_TEMPLATE_SID,
-          contentVariables: JSON.stringify({
-            "1": code
-          })
-        });
-        
-        console.log(`[WhatsApp] Template enviado com sucesso. SID: ${message.sid}`);
-        return true;
-        
-      } catch (templateError) {
-        console.error(`[WhatsApp] Falha no template: ${templateError.message}`);
-        console.log('[WhatsApp] Tentando método alternativo...');
-      }
-    }
-    
-    // MÉTODO 2: Mensagem livre (fallback)
-    try {
-      console.log('[WhatsApp] Enviando via mensagem livre...');
-      
-      message = await twilioClient.messages.create({
-        from: fromWhatsApp,
-        to: toWhatsApp,
-        body: `🔐 *SafeGuard*\n\nSeu código de verificação é: *${code}*\n\nEste código é válido por 10 minutos.\n\n_Não compartilhe este código com ninguém._`
-      });
-      
-      console.log(`[WhatsApp] Mensagem enviada com sucesso. SID: ${message.sid}`);
-      return true;
-      
-    } catch (freeTextError) {
-      console.error(`[WhatsApp] Erro ao enviar mensagem: ${freeTextError.message}`);
-      
-      // Log específico para erros conhecidos
-      if (freeTextError.code === 63016) {
-        console.error('[WhatsApp] Conta WhatsApp Business não aprovada');
-      } else if (freeTextError.code === 63018) {
-        console.error('[WhatsApp] Número não registrado no sandbox');
-      }
-      
-      throw freeTextError;
-    }
+    const message = await twilioClient.messages.create({
+      from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
+      to: `whatsapp:${formattedNumber}`, 
+      body: `Seu código de verificação é::: ${code}. Válido por 10 minutos.`
+    });   
+    return true;    
 
   } catch (error) {
     console.error(`[WhatsApp] Erro geral: ${error.message}`);
@@ -190,7 +146,7 @@ router.post("/login", async (req, res) => {
     // Gerar código 2FA
     const twoFactorCode = crypto.randomInt(100000, 999999).toString();
 
-    console.log(`[2FA] Código gerado para ${email}: ${twoFactorCode}`);
+    console.log(`Seu código de verificação é::: ${twoFactorCode}. Válido por 10 minutos.`);
     
     // Token temporário com o código 2FA
     const tempToken = jwt.sign({
@@ -198,15 +154,17 @@ router.post("/login", async (req, res) => {
       email: user.email,
       twoFactorCode: twoFactorCode,
       step: '2fa-pending'
-    }, JWT_SECRET, {expiresIn: '10m'});    
+    }, JWT_SECRET, {expiresIn: '10m'});   
     
-    // Verificar se o número de telefone existe
+    // Verificar se o número de telefone existe antes de tentar enviar o código
     if (!user.phoneNumber) {
-      console.log(`[2FA] Número de telefone não cadastrado para: ${user.email}`);
+      console.log(`Número de telefone não cadastrado para o usuário: ${user.email}`);
       
+      // No ambiente de desenvolvimento, permitir login sem 2FA
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Bypass 2FA para ${user.email} - número não cadastrado`);
         
+        // Gerar token completo de acesso
         const token = jwt.sign({
           userId: user.id,
           email: user.email
@@ -239,6 +197,7 @@ router.post("/login", async (req, res) => {
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Bypass 2FA para ${user.email} - falha no envio`);
         
+        // Gerar token completo de acesso
         const token = jwt.sign({
           userId: user.id,
           email: user.email
