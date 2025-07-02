@@ -31,10 +31,8 @@ if (!JWT_SECRET) {
 // Função para verificar o token do reCAPTCHA
 async function verifyRecaptcha(token) {
   try {    
-    // Determina se está em desenvolvimento
     const isDevelopment = process.env.NODE_ENV === 'development';
     
-    // Em desenvolvimento, sempre retorna true para facilitar os testes
     if (isDevelopment) {
       console.log('Ambiente de desenvolvimento: reCAPTCHA simulado');
       return true;
@@ -58,40 +56,95 @@ async function verifyRecaptcha(token) {
   }
 }
 
-// Função para enviar código 2FA
+// Função para enviar código 2FA via WhatsApp
 async function sendTwoFactorCodeWhatsApp(phoneNumber, code) {
   try {
-    
-    //const isDevelopment = process.env.NODE_ENV === 'development';        
-    
     if (!phoneNumber) {
-      console.error('[ERRO] Número de telefone não fornecido para envio do código 2FA');
+      console.error('[WhatsApp] Número de telefone não fornecido');
       return false;
     }
-    let formattedNumber = '+55' + phoneNumber;        
+
+    // Formatar número para E.164 (padrão internacional)
+    let formattedNumber = phoneNumber.toString().replace(/\D/g, '');
     
-    /*if (!formattedNumber.startsWith('+')) {
-      formattedNumber = '+55' + formattedNumber;
-    }      */
+    // Adicionar código do país se necessário
+    if (!formattedNumber.startsWith('55') && formattedNumber.length <= 11) {
+      formattedNumber = '55' + formattedNumber;
+    }
     
-    const message = await twilioClient.messages.create({
-      from: `whatsapp:${TWILIO_WHATSAPP_FROM}`, 
-      to: `whatsapp:${formattedNumber}`, 
-      body: `Seu código de verificação é::: ${code}. Válido por 10 minutos.`
-    });   
-    return true;    
+    if (!formattedNumber.startsWith('+')) {
+      formattedNumber = '+' + formattedNumber;
+    }
+
+    console.log(`[WhatsApp] Enviando código para: ${formattedNumber}`);
+    
+    // Verificar configurações essenciais
+    if (!TWILIO_WHATSAPP_FROM) {
+      console.error('[WhatsApp] TWILIO_WHATSAPP_FROM não configurado');
+      return false;
+    }
+    
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    const fromWhatsApp = `whatsapp:${TWILIO_WHATSAPP_FROM}`;
+    const toWhatsApp = `whatsapp:${formattedNumber}`;
+    let message;    
+    
+    // MÉTODO 1: Template aprovado (produção)
+    if (isProduction && process.env.TWILIO_WHATSAPP_TEMPLATE_SID) {
+      try {
+        console.log('[WhatsApp] Tentando envio via template aprovado...');
+        
+        message = await twilioClient.messages.create({
+          from: fromWhatsApp,
+          to: toWhatsApp,
+          contentSid: process.env.TWILIO_WHATSAPP_TEMPLATE_SID,
+          contentVariables: JSON.stringify({
+            "1": code
+          })
+        });
+        
+        console.log(`[WhatsApp] Template enviado com sucesso. SID: ${message.sid}`);
+        return true;
+        
+      } catch (templateError) {
+        console.error(`[WhatsApp] Falha no template: ${templateError.message}`);
+        console.log('[WhatsApp] Tentando método alternativo...');
+      }
+    }
+    
+    // MÉTODO 2: Mensagem livre (fallback)
+    try {
+      console.log('[WhatsApp] Enviando via mensagem livre...');
+      
+      message = await twilioClient.messages.create({
+        from: fromWhatsApp,
+        to: toWhatsApp,
+        body: `🔐 *SafeGuard*\n\nSeu código de verificação é: *${code}*\n\nEste código é válido por 10 minutos.\n\n_Não compartilhe este código com ninguém._`
+      });
+      
+      console.log(`[WhatsApp] Mensagem enviada com sucesso. SID: ${message.sid}`);
+      return true;
+      
+    } catch (freeTextError) {
+      console.error(`[WhatsApp] Erro ao enviar mensagem: ${freeTextError.message}`);
+      
+      // Log específico para erros conhecidos
+      if (freeTextError.code === 63016) {
+        console.error('[WhatsApp] Conta WhatsApp Business não aprovada');
+      } else if (freeTextError.code === 63018) {
+        console.error('[WhatsApp] Número não registrado no sandbox');
+      }
+      
+      throw freeTextError;
+    }
 
   } catch (error) {
-    console.error('[ERRO] Falha ao enviar mensagem WhatsApp:', error.message);    
+    console.error(`[WhatsApp] Erro geral: ${error.message}`);
     
-    if (error.code) {
-      console.error('[ERRO] Código:', error.code);
-    }    
-    if (error.moreInfo) {
-      console.error('[ERRO] Mais informações:', error.moreInfo);
-    }    
-    if (error.status) {
-      console.error('[ERRO] Status HTTP:', error.status);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[WhatsApp] Dica: Configure o Twilio WhatsApp Sandbox para desenvolvimento');
     }
     
     return false;
@@ -137,7 +190,7 @@ router.post("/login", async (req, res) => {
     // Gerar código 2FA
     const twoFactorCode = crypto.randomInt(100000, 999999).toString();
 
-    console.log(`Seu código de verificação é::: ${twoFactorCode}. Válido por 10 minutos.`);
+    console.log(`[2FA] Código gerado para ${email}: ${twoFactorCode}`);
     
     // Token temporário com o código 2FA
     const tempToken = jwt.sign({
@@ -147,15 +200,13 @@ router.post("/login", async (req, res) => {
       step: '2fa-pending'
     }, JWT_SECRET, {expiresIn: '10m'});    
     
-    // Verificar se o número de telefone existe antes de tentar enviar o código
+    // Verificar se o número de telefone existe
     if (!user.phoneNumber) {
-      console.log(`Número de telefone não cadastrado para o usuário: ${user.email}`);
+      console.log(`[2FA] Número de telefone não cadastrado para: ${user.email}`);
       
-      // No ambiente de desenvolvimento, permitir login sem 2FA
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Bypass 2FA para ${user.email} - número não cadastrado`);
         
-        // Gerar token completo de acesso
         const token = jwt.sign({
           userId: user.id,
           email: user.email
@@ -178,14 +229,16 @@ router.post("/login", async (req, res) => {
       });
     }
     
+    console.log(`[2FA] Enviando código via WhatsApp para: ${user.email}`);
+    
     const messageSent = await sendTwoFactorCodeWhatsApp(user.phoneNumber, twoFactorCode);    
     
     if (!messageSent) {
-      // No ambiente de desenvolvimento, permitir login sem 2FA se o envio falhar
+      console.error(`[2FA] Falha no envio do código para: ${user.email}`);
+      
       if (process.env.NODE_ENV === 'development') {
         console.log(`[DEV] Bypass 2FA para ${user.email} - falha no envio`);
         
-        // Gerar token completo de acesso
         const token = jwt.sign({
           userId: user.id,
           email: user.email
@@ -204,11 +257,14 @@ router.post("/login", async (req, res) => {
       }
       
       return res.status(500).json({
-        message: 'Erro ao enviar código de verificação. Por favor, tente novamente.'
+        message: 'Erro ao enviar código de verificação via WhatsApp. Tente novamente.',
+        details: 'Falha na comunicação com o serviço de WhatsApp'
       });
     }
     
-    // Retornar token temporário e informações básicas do usuário
+    console.log(`[2FA] Código enviado com sucesso para: ${user.email}`);
+    
+    // Retornar token temporário
     res.status(200).json({
       message: 'Primeira etapa concluída. Verifique o código enviado por WhatsApp.',
       tempToken,
@@ -221,13 +277,12 @@ router.post("/login", async (req, res) => {
     });
 
   } catch (error) {    
+    console.error(`[Login] Erro: ${error.message}`);
     res.status(500).json({
       message: 'Erro ao fazer login',
       error: error.message
     });
   }
 });
-
-
 
 export default router;
