@@ -95,7 +95,7 @@ export default function VerifyCode() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Verificação em Duas Etapas</CardTitle>
           <CardDescription className="text-center">
-            Digite o código de verificação enviado para seu WhatsApp
+            Digite o código de verificação enviado para seu email
           </CardDescription>
         </CardHeader>
 
