@@ -23,7 +23,7 @@ export default function VerifyCode() {
   const [countdown, setCountdown] = useState(600); // 10 minutos em segundos
   
   // Dados do login recebidos via estado da rota
-  const { tempToken } = location.state || {};
+  const { tempToken, user } = location.state || {};
   
   useEffect(() => {
     // Verificar se temos o token temporário
@@ -95,7 +95,8 @@ export default function VerifyCode() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Verificação em Duas Etapas</CardTitle>
           <CardDescription className="text-center">
-            Digite o código de verificação enviado para seu WhatsApp
+            Digite o código de verificação enviado para{' '}
+            <span className="font-medium">{user?.email}</span>
           </CardDescription>
         </CardHeader>
 
