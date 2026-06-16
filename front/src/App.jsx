@@ -2,11 +2,13 @@ import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import PrivateRoute from './components/PrivateRoute';
-import NewPass from './pages/Pass/New';
-import EditPass from './pages/Pass/Edit';
-import NewClient from './pages/Client/New';
+import NewPass from './pages/NewPass';
+import EditPass from './pages/EditPass';
+import Clients from './pages/Clients';
+import UserProfile from './pages/UserProfile';
 import VerifyCode from './pages/VerifyCode';
 import { Toaster } from './components/ui/toaster';
+import EditClient from './pages/EditClient';
 
 export default function App() {  
   return (
@@ -30,9 +32,19 @@ export default function App() {
             <EditPass />
           </PrivateRoute>
         } />    
-        <Route path="/clients/new" element={
+        <Route path="/clients" element={
           <PrivateRoute>
-            <NewClient />
+            <Clients />
+          </PrivateRoute>
+        } />
+        <Route path="/client/edit/:id" element={
+          <PrivateRoute>
+            <EditClient />
+          </PrivateRoute>
+        } />
+        <Route path="/user/profile" element={
+          <PrivateRoute>
+            <UserProfile />
           </PrivateRoute>
         } />
       </Routes>

@@ -20,7 +20,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^8.0.7"
   },
   "devDependencies": {
     "cross-env": "^7.0.3"
