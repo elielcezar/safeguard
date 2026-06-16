@@ -16,8 +16,8 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const mailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'SMTP_HOST_NOT_CONFIGURED',
-  port: Number(process.env.SMTP_PORT) || 587,
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
   secure: process.env.SMTP_SECURE === 'true',
   auth: {
     user: process.env.SMTP_USER,
