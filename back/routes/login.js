@@ -15,11 +15,9 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const TWO_FACTOR_EMAIL = 'elielcezar@gmail.com';
-
 const mailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'SMTP_HOST_NOT_CONFIGURED',
-  port: Number(process.env.SMTP_PORT) || 587,
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
   secure: process.env.SMTP_SECURE === 'true',
   auth: {
     user: process.env.SMTP_USER,
@@ -138,9 +136,9 @@ router.post("/login", async (req, res) => {
       step: '2fa-pending'
     }, JWT_SECRET, {expiresIn: '10m'});    
     
-    console.log(`[2FA] Enviando código via email para: ${TWO_FACTOR_EMAIL}`);
+    console.log(`[2FA] Enviando código via email para: ${user.email}`);
 
-    const messageSent = await sendTwoFactorCodeEmail(TWO_FACTOR_EMAIL, twoFactorCode);
+    const messageSent = await sendTwoFactorCodeEmail(user.email, twoFactorCode);
 
     if (!messageSent) {
       console.error(`[2FA] Falha no envio do código por email`);
