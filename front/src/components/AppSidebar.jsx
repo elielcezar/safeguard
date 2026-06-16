@@ -1,46 +1,18 @@
-import { 
-  ArrowUpCircleIcon,
-  BarChartIcon,
-  CameraIcon,
-  ClipboardListIcon,
-  DatabaseIcon,
-  FileCodeIcon,
-  FileIcon,
-  FileTextIcon,
-  FolderIcon,
-  HelpCircleIcon,
-  LayoutDashboardIcon,
-  ListIcon,
-  SearchIcon,
-  SettingsIcon,
-  UsersIcon,
-} from "lucide-react"
-import { NavMain } from "@/components/nav-main"
-//import { NavDocuments } from "@/components/nav-documents"
-//import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/NavMain"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  } 
-}
-   
+  
 export function AppSidebar({...props}) {
+    
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       
@@ -65,7 +37,7 @@ export function AppSidebar({...props}) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser user={data.user} />
+        
       </SidebarFooter>
 
     </Sidebar>
